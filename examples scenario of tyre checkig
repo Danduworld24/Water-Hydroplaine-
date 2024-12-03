@@ -1,0 +1,32 @@
+In the code provided above, the water depth levels are used to determine the tire contact and hydroplaning risks. Here are the key depth levels and their meanings:
+
+Water Depth Levels and Conditions:
+Full road contact (Safe Conditions):
+
+Speed: Less than 60 km/h
+Water depth: Less than 5 mm
+Tire contact: 100% (Full contact with the road)
+Condition: When the vehicle is traveling slowly (under 60 km/h) and there is minimal water (under 5 mm), the tires maintain full contact with the road. It’s safe to drive in these conditions.
+Reduced road contact (Moderate Risk):
+
+Speed: Between 60 and 80 km/h
+Water depth: Less than 15 mm
+Tire contact: 50% to 100%
+Condition: When the vehicle is traveling at moderate speeds (60-80 km/h) and the water depth is moderate (5 mm to 15 mm), the tires start to lose contact with the road. There is a moderate risk, and the vehicle needs to slow down to reduce the risk of hydroplaning.
+Hydroplaning Risk:
+
+Speed: More than 80 km/h
+Water depth: 15 mm or more
+Tire contact: Less than 50%
+Condition: At higher speeds (over 80 km/h) with significant water depth (15 mm or more), the tires have less than 50% contact with the road, creating a high risk of hydroplaning. The vehicle should slow down to prevent hydroplaning, and a "Don't apply Brake" warning is issued.
+Summary of Water Depth Conditions:
+Under 5 mm: Safe to drive with full tire contact.
+5 mm to 15 mm: Moderate risk with reduced tire contact (speed between 60 and 80 km/h).
+15 mm or more: High risk of hydroplaning, with reduced tire contact at speeds over 80 km/h.
+These depth levels are critical for determining the road conditions and advising the driver accordingly based on the vehicle's speed and tire contact with the road.
+
+
+
+
+
+
