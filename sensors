@@ -1,0 +1,37 @@
+To detect when water touches the tires and automatically trigger the features, you can use capacitance-based water sensors or conductive water sensors. These sensors can be installed near the tires to detect the presence of water. When water is detected, they can send a signal to the vehicle's onboard system to activate the relevant features. Here’s how you can implement these sensors in a real-time working scenario:
+
+Types of Sensors:
+Capacitance-Based Water Sensors:
+
+Type: Capacitance water level sensor.
+Function: Detects the presence of water by measuring changes in capacitance.
+Placement: Mounted near the tires, close to the road surface.
+Conductive Water Sensors:
+
+Type: Conductive water level sensor.
+Function: Detects the presence of water by measuring changes in electrical conductivity.
+Placement: Mounted near the tires, close to the road surface.
+Integration with the System:
+Capacitance-Based Water Sensor Integration:
+
+These sensors detect the presence of water by sensing the change in capacitance when water is present.
+They are highly sensitive and can detect even small amounts of water.
+Conductive Water Sensor Integration:
+
+These sensors detect water by sensing the change in conductivity when water forms a bridge between two conductive probes.
+They are simple to use and reliable for detecting water presence.
+Workflow:
+Install the Sensors:
+
+Mount the capacitance-based or conductive water sensors near each tire, close to the road surface.
+Connect to the Vehicle's Onboard System:
+
+Connect the sensors to the vehicle’s onboard system using appropriate interfaces (e.g., analog or digital input ports).
+Sensor Activation:
+
+When water is detected, the sensor sends a signal to the onboard system to activate the relevant features automatically.
+System Response:
+
+The system checks water depth, tire contact, speed, and weather conditions.
+Alerts and voice notifications are triggered based on the detected conditions.
+Updated Code:
