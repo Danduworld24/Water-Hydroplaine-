@@ -1,0 +1,158 @@
+import time
+import pyttsx3
+import requests
+
+# Initialize the text-to-speech engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Speed of speech
+voices = engine.getProperty('voices')
+for voice in voices:
+    if 'female' in voice.name.lower():
+        engine.setProperty('voice', voice.id)
+        break
+
+# Constants
+SAFE_SPEED = 60  # Safe speed in km/h
+DANGER_SYMBOL = "⚠️"
+BRAKE_WARNING = " Avoid applying brakes suddenly."
+MAX_ALERTS = 2  # Maximum number of alerts for a specific situation
+PARKING_LIGHT_ON = False  # Status of the parking lights
+
+# Replace this with your actual API key
+API_KEY = '48560dd1ad067325b1cef1245f544cd9'  # Your OpenWeatherMap API key
+CITY = 'your_city_here'  # Replace with your city
+WEATHER_URL = f'http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&units=metric'
+
+# Simulated Dashboard Display Function
+def display_on_dashboard(message):
+    """Simulate displaying a message on the vehicle's dashboard."""
+    print(f"Dashboard: {message}")
+
+def get_weather_conditions():
+    """Fetch current weather conditions from OpenWeatherMap."""
+    try:
+        response = requests.get(WEATHER_URL)
+        data = response.json()
+
+        if response.status_code == 200:
+            # Check if the 'weather' key exists in the response
+            if 'weather' in data:
+                weather_description = data['weather'][0]['description']
+                return weather_description
+            else:
+                print("Weather data not available in response.")
+                return None
+        else:
+            print(f"Error fetching weather data: {data.get('message', 'Unknown error')}")
+            return None
+    except Exception as e:
+        print(f"Error fetching weather data: {e}")
+        return None
+
+def simulate_sensor_readings():
+    """Simulate sensor readings for speed and water depth."""
+    current_speed = float(input("Enter the current speed of the vehicle (km/h): "))
+    current_water_depth = float(input("Enter the current water depth on the road (mm): "))
+    return current_speed, current_water_depth
+
+def control_parking_lights(water_depth):
+    """Control parking lights based on water depth."""
+    global PARKING_LIGHT_ON
+    if water_depth > 0 and not PARKING_LIGHT_ON:
+        print("Parking lights ON")
+        PARKING_LIGHT_ON = True
+    elif water_depth == 0 and PARKING_LIGHT_ON:
+        print("Parking lights OFF")
+        PARKING_LIGHT_ON = False
+
+def calculate_tire_contact(water_depth):
+    """Calculate the tire contact percentage based on water depth."""
+    if water_depth < 5:
+        return 100  # Full contact
+    elif 5 <= water_depth < 15:
+        return 75  # Reduced contact
+    else:
+        return 40  # Minimal contact
+
+def hydroplaning_alert(speed, water_depth, weather_description):
+    """Generate alerts based on hydroplaning risk."""
+    if water_depth == 0:
+        return "✅ Road is clear. Have a safe journey."
+    
+    tire_contact = calculate_tire_contact(water_depth)
+    
+    if tire_contact == 100:
+        return "✅ No significant water detected. Drive safely."
+    elif 50 <= tire_contact < 100:
+        recommended_speed = max(SAFE_SPEED, speed - 10)
+        return f"{DANGER_SYMBOL} Moderate risk! Reduce speed to {recommended_speed:.2f} km/h. Current weather: {weather_description.capitalize() if weather_description else 'Unknown'}"
+    else:
+        recommended_speed = max(20, speed * 0.7)  # Reduce speed to 70% of current speed
+        return f"{DANGER_SYMBOL} Danger! Hydroplaning risk detected. Slow down to {recommended_speed:.2f} km/h immediately. {BRAKE_WARNING} Current weather: {weather_description.capitalize() if weather_description else 'Unknown'}"
+
+def adjust_speed(speed, recommended_speed):
+    """Adjust the vehicle's speed."""
+    print(f"Adjusting speed from {speed:.2f} km/h to {recommended_speed:.2f} km/h.")
+    display_on_dashboard(f"Adjusting speed to {recommended_speed:.2f} km/h.")
+    voice_alert(f"Adjusting speed to {recommended_speed:.2f} kilometers per hour.")
+    return recommended_speed
+
+def voice_alert(message):
+    """Provide audio alerts to the driver."""
+    engine.say(message)
+    engine.runAndWait()
+
+def controlled_braking(current_speed, target_speed):
+    """Implement controlled braking to gradually reduce speed."""
+    while current_speed > target_speed:
+        current_speed -= 5  # Reduce speed by 5 km/h at a time
+        print(f"Controlled braking: Speed is now {current_speed:.2f} km/h")
+        display_on_dashboard(f"Speed reduced to {current_speed:.2f} km/h.")
+        time.sleep(0.5)  # Simulate time delay for gradual braking
+    return current_speed
+
+def main():
+    alert_count = 0
+    global PARKING_LIGHT_ON
+
+    while True:
+        try:
+            current_speed, current_water_depth = simulate_sensor_readings()
+            water_detected = current_water_depth > 0
+
+            # Get the current weather conditions
+            weather_description = get_weather_conditions()
+
+            # Control parking lights based on water detection
+            control_parking_lights(current_water_depth)
+
+            # Generate and handle hydroplaning alert
+            alert_message = hydroplaning_alert(current_speed, current_water_depth, weather_description)
+
+            # Print, display, and speak the alert
+            if alert_count < MAX_ALERTS and water_detected:
+                print(alert_message)
+                display_on_dashboard(alert_message)
+                voice_alert(alert_message)
+                alert_count += 1
+
+                # Adjust speed if necessary based on the alert message
+                if "Reduce speed to" in alert_message or "Slow down to" in alert_message:
+                    recommended_speed = float(alert_message.split("to ")[1].split(" km/h")[0])
+                    if current_speed > recommended_speed:
+                        current_speed = controlled_braking(current_speed, recommended_speed)
+
+            elif not water_detected:
+                alert_count = 0
+                print(alert_message)
+                display_on_dashboard(alert_message)
+                voice_alert(alert_message)
+
+            # Exit the loop after a few seconds (simulate real-time checks)
+            time.sleep(5)  # Wait for 5 seconds before checking again
+
+        except ValueError:
+            print("Invalid input. Please enter numeric values for speed and water depth.")
+
+if __name__ == "__main__":
+    main()
