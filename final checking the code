@@ -1,0 +1,163 @@
+import time
+import os
+import pyttsx3
+import random  # For simulation purposes
+
+# Initialize the text-to-speech engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)  # Speed of speech
+voices = engine.getProperty('voices')
+# Use a female voice (if available)
+for voice in voices:
+    if 'female' in voice.name.lower():
+        engine.setProperty('voice', voice.id)
+        break
+
+# Constants
+SAFE_SPEED = 56  # Safe speed in km/h (35 mph)
+HIGH_RISK_SPEED = 80  # High risk speed in km/h (50 mph)
+SAFE_WATER_DEPTH = 2.5  # Safe water depth in mm (1/10 inch)
+HIGH_RISK_WATER_DEPTH = 25  # High risk water depth in mm (1 inch)
+CRITICAL_WATER_DEPTH = 75  # Critical water depth in mm (3 inches)
+DANGER_SYMBOL = "⚠️"
+BRAKE_WARNING = " Don't apply Brake"
+
+def calculate_tire_contact(speed, water_depth):
+    """
+    Function to simulate tire contact calculation based on speed and water depth.
+    Args:
+        speed (float): Speed of the vehicle (km/h).
+        water_depth (float): Depth of water on the road (mm).
+
+    Returns:
+        float: Simulated tire contact percentage.
+    """
+    # Simplified logic for tire contact calculation
+    if water_depth < 5:
+        return 100.0  # Full contact
+    elif water_depth < 15:
+        return 75.0  # Reduced contact
+    else:
+        return 40.0  # Minimal contact
+
+def hydroplaning_alert(speed, water_depth, tire_contact):
+    """
+    Function to provide alerts based on road conditions.
+    Args:
+        speed (float): Speed of the vehicle (km/h).
+        water_depth (float): Depth of water on the road (mm).
+        tire_contact (float): Percentage of tire contact with the road (0 to 100).
+
+    Returns:
+        str: Alert message for the driver.
+    """
+    if speed > HIGH_RISK_SPEED and water_depth > HIGH_RISK_WATER_DEPTH:
+        recommended_speed = max(20, speed - 40)
+        return f"{DANGER_SYMBOL} Extreme Danger! High risk of hydroplaning. Slow down to {recommended_speed} km/h immediately.{BRAKE_WARNING}"
+    
+    if speed > SAFE_SPEED and water_depth >= SAFE_WATER_DEPTH:
+        recommended_speed = max(SAFE_SPEED, speed - 20)
+        return f"{DANGER_SYMBOL} Moderate risk! Reduce speed to {recommended_speed} km/h."
+
+    if speed <= SAFE_SPEED and water_depth < SAFE_WATER_DEPTH:
+        return "✅ Road is clear. Have a safe journey."
+
+    return "✅ No significant water detected. Drive safely."
+
+def voice_alert(message):
+    """
+    Function to speak the alert message.
+    Args:
+        message (str): The alert message to be spoken.
+    """
+    engine.say(message)
+    engine.runAndWait()
+
+def get_user_input(prompt):
+    """
+    Function to get input from the user with a prompt.
+    Args:
+        prompt (str): The prompt message for the user.
+
+    Returns:
+        str: The input entered by the user.
+    """
+    return input(prompt)
+
+def blink_icon(icon, times=3, interval=0.5):
+    """
+    Function to simulate blinking effect for an icon.
+    Args:
+        icon (str): The icon to blink.
+        times (int): Number of times to blink.
+        interval (float): Time interval between blinks.
+    """
+    for _ in range(times):
+        print(icon, end='\r', flush=True)
+        time.sleep(interval)
+        print(' ' * len(icon), end='\r', flush=True)
+        time.sleep(interval)
+    print(icon)  # Print the icon one last time
+
+def simulate_water_depth_sensor():
+    """
+    Function to simulate a water depth sensor.
+    Returns:
+        float: Simulated water depth in mm.
+    """
+    # Simulate water depth sensor reading
+    return random.uniform(0, 100)  # Random water depth between 0 and 100 mm for simulation
+
+# Simulate weather check (using a placeholder since we don't have a valid API key)
+def check_weather_condition():
+    """
+    Simulates a weather check and returns whether it is raining.
+    Returns:
+        bool: True if raining, False otherwise.
+    """
+    # Placeholder for real weather check logic
+    return random.choice([True, False])  # Randomly choose if it's raining or not for simulation
+
+while True:
+    try:
+        # Get user input for current speed
+        current_speed = float(get_user_input("Enter the current speed of the vehicle (km/h): "))
+
+        while True:
+            # Simulate water detection
+            current_water_depth = simulate_water_depth_sensor()
+            raining = check_weather_condition()
+
+            # Calculate the tire contact percentage based on speed and water depth
+            current_tire_contact = calculate_tire_contact(current_speed, current_water_depth)
+
+            # Get the alert message
+            alert_message = hydroplaning_alert(current_speed, current_water_depth, current_tire_contact)
+            
+            # Clear the previous output
+            os.system('cls' if os.name == 'nt' else 'clear')
+            
+            # Print and speak the alert
+            print(alert_message)
+            voice_alert(alert_message)
+            voice_alert(alert_message)  # Speak the alert twice
+            
+            # Blink the danger symbol if present in the alert message
+            if "⚠️" in alert_message:
+                blink_icon("⚠️", times=5, interval=0.5)
+            
+            # Update current speed based on the recommended speed from the alert message
+            if "Reduce speed to" in alert_message:
+                current_speed = float(alert_message.split("Reduce speed to ")[1].split(" km/h")[0])
+            elif "Slow down to" in alert_message:
+                current_speed = float(alert_message.split("Slow down to ")[1].split(" km/h")[0])
+
+            # Check if the road is clear
+            if "Road is clear" in alert_message:
+                break
+            
+            # Check conditions continuously
+            time.sleep(0.1)
+
+    except ValueError:
+        print("Invalid input. Please enter numeric values for speed and water depth.")
