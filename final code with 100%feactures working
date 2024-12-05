@@ -1,0 +1,151 @@
+import time
+import pyttsx3
+import speech_recognition as sr
+import requests
+
+# Initialize the text-to-speech engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)
+voices = engine.getProperty('voices')
+for voice in voices:
+    if 'female' in voice.name.lower():
+        engine.setProperty('voice', voice.id)
+        break
+
+# Constants
+DANGER_SYMBOL = "⚠️"
+BRAKE_WARNING = " Slow down. Avoid sudden braking."
+API_KEY = 'your_api_key_here'  # Replace with your OpenWeatherMap API key
+CITY = 'Chennai'
+WEATHER_URL = f'http://api.openweathermap.org/data/2.5/weather?q={CITY}&appid={API_KEY}&units=metric'
+
+# System states
+PARKING_LIGHT_ON = False
+CRUISE_CONTROL_ON = True
+SYSTEM_ACTIVE = True  # To control system-wide activation
+ALERT_ACTIVE = True  # To control alert state
+
+# Simulated Dashboard Display Function
+def display_on_dashboard(message):
+    """Simulate displaying a message on the vehicle's dashboard."""
+    print(f"Dashboard: {message}")
+
+def voice_alert(message):
+    """Provide audio alerts to the driver."""
+    engine.say(message)
+    engine.runAndWait()
+
+def get_weather_conditions():
+    """Fetch current weather conditions from OpenWeatherMap."""
+    try:
+        response = requests.get(WEATHER_URL)
+        data = response.json()
+        if response.status_code == 200 and 'weather' in data:
+            return data['weather'][0]['description']
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching weather data: {e}")
+        return None
+
+def simulate_sensor_readings():
+    """Simulate sensor readings for speed, water depth, and tire tread depth."""
+    current_speed = float(input("Enter the current speed of the vehicle (km/h): "))
+    current_water_depth = float(input("Enter the current water depth on the road (mm): "))
+    tire_tread_depth = float(input("Enter the tire tread depth (mm): "))
+    return current_speed, current_water_depth, tire_tread_depth
+
+def control_parking_lights(water_depth):
+    """Control parking lights based on water depth."""
+    global PARKING_LIGHT_ON
+    if water_depth > 0 and not PARKING_LIGHT_ON:
+        print("Parking lights ON")
+        display_on_dashboard("Parking lights activated.")
+        PARKING_LIGHT_ON = True
+    elif water_depth == 0 and PARKING_LIGHT_ON:
+        print("Parking lights OFF")
+        display_on_dashboard("Parking lights deactivated.")
+        PARKING_LIGHT_ON = False
+
+def manage_cruise_control(water_detected):
+    """Automatically turn off cruise control if water is detected."""
+    global CRUISE_CONTROL_ON
+    if water_detected and CRUISE_CONTROL_ON:
+        print("Cruise control OFF due to water detection.")
+        display_on_dashboard("Cruise control deactivated.")
+        voice_alert("Cruise control turned off due to water detection.")
+        CRUISE_CONTROL_ON = False
+    elif not water_detected and not CRUISE_CONTROL_ON:
+        CRUISE_CONTROL_ON = True
+        print("Cruise control restored.")
+        display_on_dashboard("Cruise control reactivated.")
+
+def hydroplaning_alert(speed, water_depth, tread_depth):
+    """Generate alerts based on hydroplaning risk."""
+    if speed == 0 or water_depth == 0:
+        return "✅ Road is clear. Have a safe journey."
+    
+    if tread_depth > 6:  # Good tire condition
+        safe_speed = 80 if water_depth <= 6 else 60
+    elif 4 <= tread_depth <= 6:  # Mid-life tires
+        safe_speed = 70 if water_depth <= 6 else 50
+    else:  # Worn tires
+        safe_speed = 60 if water_depth <= 6 else 40
+
+    if speed > safe_speed:
+        return f"{DANGER_SYMBOL} Danger! Reduce speed below {safe_speed} km/h immediately. Tire Tread Depth: {tread_depth:.1f} mm, Water Depth: {water_depth:.1f} mm.{BRAKE_WARNING}"
+    else:
+        return "✅ Road is clear. Safe to proceed."
+
+def process_commands():
+    """Listen for 'stop alerting' command to deactivate alerts."""
+    global ALERT_ACTIVE  # Declare global to modify ALERT_ACTIVE
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening for 'stop alerting' command...")
+        recognizer.adjust_for_ambient_noise(source)  # Adjust for ambient noise
+        try:
+            audio = recognizer.listen(source, timeout=5)  # Listen for 5 seconds
+            command = recognizer.recognize_google(audio).lower()  # Recognize the command
+            print(f"Command received: {command}")  # Debug: Print recognized command
+            if "stop alerting" in command:
+                ALERT_ACTIVE = False
+                voice_alert("Alerts deactivated. Have a safe journey.")
+        except sr.UnknownValueError:
+            print("Could not understand the command.")  # Debug: Print if command is not understood
+        except sr.RequestError as e:
+            print(f"Error with the speech recognition service: {e}")  # Handle errors from the Google API
+        except Exception as e:
+            print(f"Error during voice recognition: {e}")  # Catch all other exceptions
+
+def main():
+    global SYSTEM_ACTIVE, CRUISE_CONTROL_ON, PARKING_LIGHT_ON, ALERT_ACTIVE
+
+    while SYSTEM_ACTIVE:
+        try:
+            # Process sensor readings
+            current_speed, current_water_depth, tire_tread_depth = simulate_sensor_readings()
+            water_detected = current_water_depth > 0
+
+            # Fetch weather conditions
+            weather_description = get_weather_conditions()
+
+            # Activate parking lights and manage cruise control immediately if water is detected
+            control_parking_lights(current_water_depth)
+            manage_cruise_control(water_detected)
+
+            # Generate hydroplaning alerts and display on the dashboard
+            if ALERT_ACTIVE:
+                alert_message = hydroplaning_alert(current_speed, current_water_depth, tire_tread_depth)
+                display_on_dashboard(alert_message)
+                voice_alert(alert_message)
+
+            # Continuously process commands to stop alerts
+            process_commands()
+
+            time.sleep(2)  # Small delay for simulation
+        except ValueError:
+            print("Invalid input. Please enter numeric values for speed and water depth.")
+
+if __name__ == "__main__":
+    main()
